@@ -3,6 +3,7 @@ import requests
 import re
 from PyPDF2 import PdfReader
 import io
+import os
 
 app = Flask(__name__)
 
@@ -21,19 +22,28 @@ def parse_pdf():
 
     res = requests.get(pdf_url, headers=headers)
     if res.status_code != 200:
-        return {"error": "PDF not available", "status": res.status_code}, 400
+        return {
+            "error": "PDF not available",
+            "status": res.status_code,
+            "pdf_url": pdf_url
+        }, 400
 
     reader = PdfReader(io.BytesIO(res.content))
     text = ""
     for page in reader.pages:
-        text += page.extract_text()
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text
 
-    mc_numbers = re.findall(r'MC-\\d{4,6}', text)
+    mc_numbers = re.findall(r'MC-\d{4,6}', text)
+
     return jsonify({
-        "mc_numbers": list(set(mc_numbers)),
-        "total": len(mc_numbers),
-        "date": date
+        "mc_numbers": sorted(set(mc_numbers)),
+        "total": len(set(mc_numbers)),
+        "date": date,
+        "source": pdf_url
     })
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
