@@ -3,6 +3,7 @@ import requests
 import io
 from PyPDF2 import PdfReader
 import os
+import re
 
 app = Flask(__name__)
 
@@ -34,9 +35,25 @@ def parse_pdf():
         if page_text:
             full_text += page_text + "\n"
 
+    # Extract only the relevant sections
+    pattern = r"(CERTIFICATES, PERMITS & LICENSES FILED AFTER JANUARY 1, 1995.*?)(?:\n[A-Z].{10,}|\Z)"
+    section_1 = re.search(pattern, full_text, re.DOTALL)
+
+    pattern2 = r"(CERTIFICATES OF REGISTRATION.*?)(?:\n[A-Z].{10,}|\Z)"
+    section_2 = re.search(pattern2, full_text, re.DOTALL)
+
+    text_to_search = ""
+    if section_1:
+        text_to_search += section_1.group(1) + "\n"
+    if section_2:
+        text_to_search += section_2.group(1)
+
+    # Extract only MC numbers from selected text
+    mc_numbers = re.findall(r'MC-\d{4,6}', text_to_search)
+
     return jsonify({
-        "text": full_text,
-        "length": len(full_text),
+        "mc_numbers": sorted(set(mc_numbers)),
+        "total": len(set(mc_numbers)),
         "date": date,
         "pdf_url": pdf_url
     })
