@@ -1,8 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
-import re
-from PyPDF2 import PdfReader
 import io
+from PyPDF2 import PdfReader
 import os
 
 app = Flask(__name__)
@@ -29,19 +28,17 @@ def parse_pdf():
         }, 400
 
     reader = PdfReader(io.BytesIO(res.content))
-    text = ""
+    full_text = ""
     for page in reader.pages:
         page_text = page.extract_text()
         if page_text:
-            text += page_text
-
-    mc_numbers = re.findall(r'MC-\d{4,6}', text)
+            full_text += page_text + "\n"
 
     return jsonify({
-        "mc_numbers": sorted(set(mc_numbers)),
-        "total": len(set(mc_numbers)),
+        "text": full_text,
+        "length": len(full_text),
         "date": date,
-        "source": pdf_url
+        "pdf_url": pdf_url
     })
 
 if __name__ == "__main__":
