@@ -28,7 +28,6 @@ def parse_pdf():
             "pdf_url": pdf_url
         }, 400
 
-    # Read the PDF
     reader = PdfReader(io.BytesIO(res.content))
     full_text = ""
     for page in reader.pages:
@@ -36,32 +35,21 @@ def parse_pdf():
         if page_text:
             full_text += page_text + "\n"
 
-    # Normalize text for regex matching
-    normalized_text = re.sub(r'\s+', ' ', full_text)
+    # Extract only the text between the two specific headings
+    pattern = r"CERTIFICATES, PERMITS & LICENSES FILED AFTER JANUARY 1, 1995\s+NUMBER(.*?)CERTIFICATES OF REGISTRATION\s+NUMBER"
+    match = re.search(pattern, full_text, re.DOTALL | re.IGNORECASE)
 
-    # Match section 1: CERTIFICATES, PERMITS & LICENSES FILED AFTER JANUARY 1, 1995
-    section_1 = re.search(
-        r'(CERTIFICATES.*?JANUARY 1, 1995)(.*?)(?=[A-Z][A-Z ]{10,})',
-        normalized_text,
-        re.IGNORECASE,
-    )
+    if match:
+        target_text = match.group(1)
+    else:
+        return {
+            "error": "Section not found",
+            "pdf_url": pdf_url,
+            "date": date
+        }, 404
 
-    # Match section 2: CERTIFICATES OF REGISTRATION
-    section_2 = re.search(
-        r'(CERTIFICATES OF REGISTRATION)(.*?)(?=[A-Z][A-Z ]{10,})',
-        normalized_text,
-        re.IGNORECASE,
-    )
-
-    # Combine matched sections for MC number extraction
-    text_to_search = ""
-    if section_1:
-        text_to_search += section_1.group(2)
-    if section_2:
-        text_to_search += section_2.group(2)
-
-    # Extract MC numbers from the selected text
-    mc_numbers = re.findall(r'MC-\d{4,6}', text_to_search)
+    # Extract MC numbers only from the targeted section
+    mc_numbers = re.findall(r'MC-\d{4,6}', target_text)
 
     return jsonify({
         "mc_numbers": sorted(set(mc_numbers)),
