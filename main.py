@@ -35,21 +35,21 @@ def parse_pdf():
         if page_text:
             full_text += page_text + "\n"
 
-    # Extract only the text between the two specific headings
-    pattern = r"CERTIFICATES, PERMITS & LICENSES FILED AFTER JANUARY 1, 1995\s+NUMBER(.*?)CERTIFICATES OF REGISTRATION\s+NUMBER"
-    match = re.search(pattern, full_text, re.DOTALL | re.IGNORECASE)
+    mc_numbers = []
 
-    if match:
-        target_text = match.group(1)
-    else:
-        return {
-            "error": "Section not found",
-            "pdf_url": pdf_url,
-            "date": date
-        }, 404
+    # Section 1: Between 'CERTIFICATES, PERMITS...' and 'CERTIFICATES OF REGISTRATION'
+    pattern_1 = r"CERTIFICATES, PERMITS & LICENSES FILED AFTER JANUARY 1, 1995\s+NUMBER(.*?)CERTIFICATES OF REGISTRATION\s+NUMBER"
+    match_1 = re.search(pattern_1, full_text, re.DOTALL | re.IGNORECASE)
+    if match_1:
+        text_1 = match_1.group(1)
+        mc_numbers += re.findall(r'MC-\d{4,8}', text_1)
 
-    # Extract MC numbers only from the targeted section
-    mc_numbers = re.findall(r'MC-\d{4,8}', target_text)
+    # Section 2: Between 'CERTIFICATES OF REGISTRATION' and 'DISMISSALS'
+    pattern_2 = r"CERTIFICATES OF REGISTRATION\s+NUMBER(.*?)DISMISSALS\s+Decisions"
+    match_2 = re.search(pattern_2, full_text, re.DOTALL | re.IGNORECASE)
+    if match_2:
+        text_2 = match_2.group(1)
+        mc_numbers += re.findall(r'MC-\d{4,8}', text_2)
 
     return jsonify({
         "mc_numbers": sorted(set(mc_numbers)),
