@@ -49,7 +49,7 @@ def parse_pdf():
         }, 404
 
     # Extract MC numbers only from the targeted section
-    mc_numbers = re.findall(r'MC-\d{4,6}', target_text)
+    mc_numbers = re.findall(r'MC-\d{4,8}', target_text)
 
     return jsonify({
         "mc_numbers": sorted(set(mc_numbers)),
