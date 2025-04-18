@@ -42,18 +42,21 @@ def parse_pdf():
     match_1 = re.search(pattern_1, full_text, re.DOTALL | re.IGNORECASE)
     if match_1:
         text_1 = match_1.group(1)
-        mc_numbers += re.findall(r'MC-\d{4,8}', text_1)
+        # Capture MC numbers ending with -C but only return the base MC number
+        mc_numbers += re.findall(r'(MC-\d{4,8})-C', text_1)
 
     # Section 2: Between 'CERTIFICATES OF REGISTRATION' and 'DISMISSALS'
     pattern_2 = r"CERTIFICATES OF REGISTRATION\s+NUMBER(.*?)DISMISSALS\s+Decisions"
     match_2 = re.search(pattern_2, full_text, re.DOTALL | re.IGNORECASE)
     if match_2:
         text_2 = match_2.group(1)
-        mc_numbers += re.findall(r'MC-\d{4,8}', text_2)
+        mc_numbers += re.findall(r'(MC-\d{4,8})-C', text_2)
+
+    unique_mc = sorted(set(mc_numbers))
 
     return jsonify({
-        "mc_numbers": sorted(set(mc_numbers)),
-        "total": len(set(mc_numbers)),
+        "mc_numbers": unique_mc,
+        "total": len(unique_mc),
         "date": date,
         "pdf_url": pdf_url
     })
